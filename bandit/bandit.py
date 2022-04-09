@@ -1,4 +1,5 @@
-from epsilon_greedy import EpsilonGreedy
+from my_gambler import MyGambler
+
 import numpy as np 
 import matplotlib.pyplot as plt
 import copy
@@ -17,13 +18,18 @@ class Bandit:
     def get_reward(self, lever):
         return np.random.normal(loc=self.means[lever], scale=1)
 
-def main(num_levers=10, num_iterations=2000, num_problems=1000):
+"""
+Run the k-armed bandit experiment.
+
+:param num_levers: Number of levers.
+:param num_iterations: Amount of times the gambler gets to pull a lever.
+:param num_problems: Amount of times the experiment is repeated.
+"""
+def main(num_levers=10, num_iterations=50, num_problems=100):
 
     # Init gamblers
-    greed = EpsilonGreedy(0, num_levers, 'e = 0')
-    hundredth = EpsilonGreedy(0.005, num_levers, 'e = 0.005')
-    tenth = EpsilonGreedy(0.1, num_levers, 'e = 0.1')
-    gambler_prototypes = copy.deepcopy([greed, hundredth, tenth])
+    gambler = MyGambler(num_levers, 'Hennings und Alis Gambler')
+    gambler_prototypes = copy.deepcopy([gambler])
 
     # Prepare statistics
     total_reward = {}
@@ -49,9 +55,6 @@ def main(num_levers=10, num_iterations=2000, num_problems=1000):
                 # Update statistics
                 total_reward[gambler.id] += reward
                 average_rewards[gambler.id][step] += (1 / (problem + 1)) * (reward - average_rewards[gambler.id][step])
-
-        #print(f"You have received a total reward of {total_reward} over {num_iterations} iterations.")
-        #print(f"That makes for an average reward of {total_reward / num_iterations}")
 
     
     # Plot results
