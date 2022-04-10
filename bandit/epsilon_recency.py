@@ -1,19 +1,24 @@
 from gambler import Gambler 
 import numpy as np 
+import copy
 
-class EpsilonGreedy(Gambler):
+"""
+Gambler that balances exploitation and exploration, considering recent rewards more strongly.
+"""
+class EpsilonRecency(Gambler):
 
-    def __init__(self, epsilon, num_levers, id, initial=0):
+    def __init__(self, epsilon, num_levers, id, stepsize=0.1):
         self.epsilon = epsilon 
         self.num_levers = num_levers 
         self.id = id
+        self.stepsize = stepsize
 
         self.times_levers_pulled = [0] * num_levers
-        self.value_estimates = [initial] * num_levers
+        self.value_estimates = [0] * num_levers
 
     def accept_reward(self, reward, choice):
         self.times_levers_pulled[choice] += 1
-        self.value_estimates[choice] += (1 / self.times_levers_pulled[choice]) * (reward - self.value_estimates[choice])
+        self.value_estimates[choice] += self.stepsize * (reward - self.value_estimates[choice])
 
     def pull_lever(self):
         p = np.random.uniform()

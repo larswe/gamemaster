@@ -1,4 +1,5 @@
-from my_gambler import MyGambler
+from epsilon_greedy import EpsilonGreedy
+from epsilon_recency import EpsilonRecency
 
 import numpy as np 
 import matplotlib.pyplot as plt
@@ -24,12 +25,16 @@ Run the k-armed bandit experiment.
 :param num_levers: Number of levers.
 :param num_iterations: Amount of times the gambler gets to pull a lever.
 :param num_problems: Amount of times the experiment is repeated.
+:param stationary: Whether the lever distributions stay constant within each iteration.
 """
-def main(num_levers=10, num_iterations=50, num_problems=100):
+def main(num_levers=10, num_iterations=10000, num_problems=100, stationary=False):
 
     # Init gamblers
-    gambler = MyGambler(num_levers, 'Hennings und Alis Gambler')
-    gambler_prototypes = copy.deepcopy([gambler])
+    #greed = EpsilonGreedy(0, num_levers, 'e = 0')
+    #hunth = EpsilonGreedy(0.01, num_levers, 'e = 0.01')
+    tenth = EpsilonGreedy(0.1, num_levers, 'e = 0.1, a = 1/n')
+    recent = EpsilonRecency(0.1, num_levers, 'e = 0.1, a = 0.1', stepsize=0.1)
+    gambler_prototypes = copy.deepcopy([tenth, recent])
 
     # Prepare statistics
     total_reward = {}
@@ -47,6 +52,7 @@ def main(num_levers=10, num_iterations=50, num_problems=100):
         gamblers = copy.deepcopy(gambler_prototypes)
 
         for step in range(num_iterations):
+            # Pull levers
             for gambler in gamblers:
                 lever = gambler.pull_lever()
                 reward = bandit.get_reward(lever)
@@ -55,6 +61,12 @@ def main(num_levers=10, num_iterations=50, num_problems=100):
                 # Update statistics
                 total_reward[gambler.id] += reward
                 average_rewards[gambler.id][step] += (1 / (problem + 1)) * (reward - average_rewards[gambler.id][step])
+            
+            # Update bandit
+            if not stationary:
+                for i in range(num_levers):
+                    random_inc = np.random.normal(loc=0, scale=0.01)
+                    bandit.means[i] += random_inc
 
     
     # Plot results
