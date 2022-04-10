@@ -25,16 +25,19 @@ Run the k-armed bandit experiment.
 :param num_levers: Number of levers.
 :param num_iterations: Amount of times the gambler gets to pull a lever.
 :param num_problems: Amount of times the experiment is repeated.
-:param stationary: Whether the lever distributions stay constant within each iteration.
+:param stationary: Whether the lever distributions stay constant during the bandit's lifetime.
 """
-def main(num_levers=10, num_iterations=10000, num_problems=100, stationary=False):
+def main(num_levers=10, num_iterations=10000, num_problems=50, stationary=False):
 
     # Init gamblers
-    #greed = EpsilonGreedy(0, num_levers, 'e = 0')
-    #hunth = EpsilonGreedy(0.01, num_levers, 'e = 0.01')
-    tenth = EpsilonGreedy(0.1, num_levers, 'e = 0.1, a = 1/n')
+    greed = EpsilonGreedy(0, num_levers, 'e = 0, q0 = 0')
+    hunth = EpsilonGreedy(0.01, num_levers, 'e = 0.01, q0 = 0')
+    tenth = EpsilonGreedy(0.1, num_levers, 'e = 0.1, q0 = 0')
+    greed5 = EpsilonGreedy(0, num_levers, 'e = 0, q0 = 5', initial=5)
+    hunth5 = EpsilonGreedy(0.01, num_levers, 'e = 0.01, q0 = 5', initial=5)
+    tenth5 = EpsilonGreedy(0.1, num_levers, 'e = 0.1, q0 = 5', initial=5)
     recent = EpsilonRecency(0.1, num_levers, 'e = 0.1, a = 0.1', stepsize=0.1)
-    gambler_prototypes = copy.deepcopy([tenth, recent])
+    gambler_prototypes = copy.deepcopy([tenth, greed5, recent])
 
     # Prepare statistics
     total_reward = {}
