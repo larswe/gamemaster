@@ -2,6 +2,7 @@ from epsilon_greedy import EpsilonGreedy
 from epsilon_recency import EpsilonRecency
 from unbiased_recency import UnbiasedRecency
 from upper_confidence_bound import UpperConfidenceBoundGambler
+from stochastic_gradient_gambler import StochasticGradientGambler
 
 import numpy as np 
 import matplotlib.pyplot as plt
@@ -31,21 +32,17 @@ Run the k-armed bandit experiment.
 :param num_problems: Amount of times the experiment is repeated.
 :param stationary: Whether the lever distributions stay constant during the bandit's lifetime.
 """
-def main(num_levers=10, num_iterations=2000, num_problems=100, stationary=True):
+def main(num_levers=10, num_iterations=2000, num_problems=500, stationary=True):
 
     # Init gamblers
-    greed = EpsilonGreedy(0, num_levers, 'e = 0, q0 = 0')
-    hunth = EpsilonGreedy(0.01, num_levers, 'e = 0.01, q0 = 0')
-    tenth = EpsilonGreedy(0.1, num_levers, 'e = 0.1, q0 = 0')
-    greed5 = EpsilonGreedy(0, num_levers, 'e = 0, q0 = 5', initial=5)
-    hunth5 = EpsilonGreedy(0.01, num_levers, 'e = 0.01, q0 = 5', initial=5)
-    tenth5 = EpsilonGreedy(0.1, num_levers, 'e = 0.1, q0 = 5', initial=5)
-    recent = EpsilonRecency(0.1, num_levers, 'e = 0.1, a = 0.1', stepsize=0.1)
-    unbiased = UnbiasedRecency(0.1, num_levers, 'unbiased, a = 0.1', stepsize=0.1)
-    ucb075 = UpperConfidenceBoundGambler(0.75, num_levers, "UCB c=0.75")
-    ucb075_conf = UpperConfidenceBoundGambler(0.75, num_levers, "UCB c=0.75, q0=5", initial=5)
+    greed = EpsilonGreedy(1/16, num_levers, 'e-greedy')
+    greed_opt = EpsilonGreedy(1/16, num_levers, 'e-greedy optimist', initial=5)
+    ucb = UpperConfidenceBoundGambler(0.75, num_levers, "UCB")
+    sgd = StochasticGradientGambler(0.25, num_levers, 'SGD')
+    # recent = EpsilonRecency(0.1, num_levers, 'e = 0.1, a = 0.1', stepsize=0.1)
+    # stoc_recent = StochasticGradientGambler(0.1, num_levers, 'SGD, a = 0.1, recent', stationary=False)
     
-    gambler_prototypes = copy.deepcopy([tenth, greed5, ucb075, ucb075_conf])
+    gambler_prototypes = copy.deepcopy([greed, greed_opt, ucb, sgd])
 
     # Prepare statistics
     total_reward = {}
@@ -95,6 +92,8 @@ def main(num_levers=10, num_iterations=2000, num_problems=100, stationary=True):
     plt.xlabel("Step")
     plt.legend()
     plt.show()
+
+    print()
 
     # Plot optimal actions
     for gambler_id in [g.id for g in gambler_prototypes]:
