@@ -1,5 +1,7 @@
 from epsilon_greedy import EpsilonGreedy
 from epsilon_recency import EpsilonRecency
+from unbiased_recency import UnbiasedRecency
+from upper_confidence_bound import UpperConfidenceBoundGambler
 
 import numpy as np 
 import matplotlib.pyplot as plt
@@ -14,6 +16,8 @@ class Bandit:
         for i in range(num_levers):
             mean = np.random.normal(loc=0, scale=1)
             self.means[i] = mean
+        
+        self.best_lever = np.argmax(self.means)
 
 
     def get_reward(self, lever):
@@ -27,7 +31,7 @@ Run the k-armed bandit experiment.
 :param num_problems: Amount of times the experiment is repeated.
 :param stationary: Whether the lever distributions stay constant during the bandit's lifetime.
 """
-def main(num_levers=10, num_iterations=10000, num_problems=50, stationary=False):
+def main(num_levers=10, num_iterations=2000, num_problems=100, stationary=True):
 
     # Init gamblers
     greed = EpsilonGreedy(0, num_levers, 'e = 0, q0 = 0')
@@ -37,14 +41,20 @@ def main(num_levers=10, num_iterations=10000, num_problems=50, stationary=False)
     hunth5 = EpsilonGreedy(0.01, num_levers, 'e = 0.01, q0 = 5', initial=5)
     tenth5 = EpsilonGreedy(0.1, num_levers, 'e = 0.1, q0 = 5', initial=5)
     recent = EpsilonRecency(0.1, num_levers, 'e = 0.1, a = 0.1', stepsize=0.1)
-    gambler_prototypes = copy.deepcopy([tenth, greed5, recent])
+    unbiased = UnbiasedRecency(0.1, num_levers, 'unbiased, a = 0.1', stepsize=0.1)
+    ucb075 = UpperConfidenceBoundGambler(0.75, num_levers, "UCB c=0.75")
+    ucb075_conf = UpperConfidenceBoundGambler(0.75, num_levers, "UCB c=0.75, q0=5", initial=5)
+    
+    gambler_prototypes = copy.deepcopy([tenth, greed5, ucb075, ucb075_conf])
 
     # Prepare statistics
     total_reward = {}
     average_rewards = {}
+    optimal_counts = {}
     for gambler in gambler_prototypes:
         total_reward[gambler.id] = 0
         average_rewards[gambler.id] = [0] * num_iterations
+        optimal_counts[gambler.id] = [0] * num_iterations
 
     for problem in range(num_problems):
 
@@ -64,6 +74,8 @@ def main(num_levers=10, num_iterations=10000, num_problems=50, stationary=False)
                 # Update statistics
                 total_reward[gambler.id] += reward
                 average_rewards[gambler.id][step] += (1 / (problem + 1)) * (reward - average_rewards[gambler.id][step])
+                if lever == bandit.best_lever:
+                    optimal_counts[gambler.id][step] += 1
             
             # Update bandit
             if not stationary:
@@ -72,13 +84,25 @@ def main(num_levers=10, num_iterations=10000, num_problems=50, stationary=False)
                     bandit.means[i] += random_inc
 
     
-    # Plot results
+    # Plot average reward
     for gambler_id in [g.id for g in gambler_prototypes]:
         plt.plot(range(1, num_iterations+1), average_rewards[gambler_id], label=gambler_id)
         print(f"Gambler {gambler_id} received an average reward of {total_reward[gambler_id] / (num_iterations*num_problems)} per step.")
     plt.title("Average gambler performance over time")
     plt.ylim(0, 2)
     plt.ylabel("Average reward")
+    plt.xlim(1, num_iterations)
+    plt.xlabel("Step")
+    plt.legend()
+    plt.show()
+
+    # Plot optimal actions
+    for gambler_id in [g.id for g in gambler_prototypes]:
+        plt.plot(range(1, num_iterations+1), np.true_divide(optimal_counts[gambler_id], num_problems), label=gambler_id)
+        print(f"Gambler {gambler_id} chose the optimal lever {np.sum(optimal_counts[gambler_id]) / (num_iterations * num_problems)} of the time.")
+    plt.title("Gambler accuracy over time")
+    plt.ylim(0, 1)
+    plt.ylabel("Optimal action ratio")
     plt.xlim(1, num_iterations)
     plt.xlabel("Step")
     plt.legend()
